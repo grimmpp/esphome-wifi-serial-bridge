@@ -1,0 +1,97 @@
+esphome:
+  name: usb-tcp-bridge
+  friendly_name: usb-tcp-bridge
+  min_version: 2024.6.0
+  name_add_mac_suffix: false
+  platformio_options:
+    board_build.flash_mode: dio
+    board_build.arduino.memory_type: qio_opi
+    build_flags:
+      - '-DARDUINO_USB_MODE=0'         # Serial on USBCDC 
+      - '-DARDUINO_USB_CDC_ON_BOOT=1'  # Serial Monitor on Serial0
+      - '-DBOARD_HAS_PSRAM'
+  libraries:
+    - WiFi
+    - ESPmDNS
+    - AsyncTCP
+  includes:
+    - stream_server/stream_server.h
+    # - test_server.h
+  
+  project:
+    name: esphome.web
+    version: dev
+
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "bn2KK7fJh+gZyd9r+oie+j3BDLn8R2rsGRIQVjNm1rY="
+
+ota:
+  - platform: esphome
+    password: "d89ac173547a0c156c1ec2baf8c93029"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Usb-Tcp-Bridge Fallback Hotspot"
+    password: "rgVHId12GcDQ"
+
+# UART Konfiguration für USB-CDC
+uart:
+  id: uart_usb
+  tx_pin: GPIO20
+  rx_pin: GPIO19
+  baud_rate: 9600
+  data_bits: 8
+  parity: NONE
+  stop_bits: 1
+
+# WS2811 LED Konfiguration
+light:
+  - platform: esp32_rmt_led_strip
+    id: my_light  
+    rgb_order: GRB
+    pin: GPIO48
+    num_leds: 1
+    rmt_channel: 0
+    chipset: ws2812
+    name: "My Light"
+
+external_components:
+  - source:
+      type: local
+      path: .
+    components: [stream_server]
+
+web_server:
+
+captive_portal:
+
+stream_server:
+   uart_id: uart_usb
+   port: 2325
+   # 0: unlimited
+   # positive: keep only N latest connected clients
+   # negative: reject over N clients
+   max_clients: 4   
+
+# on_boot:
+#   priority: -10  # Higher priority runs first
+#   then:
+#     - light.turn_on:
+#         id: pwm_output
+#         brightness: 25%
